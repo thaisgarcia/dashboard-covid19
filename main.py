@@ -40,21 +40,31 @@ app.layout = html.Div([
     html.Div(children=[
         dcc.Graph(id='my_bee_map', figure={}, style={'width': "60%",
                                                      "height": "30%",
-                                                     "margin": "0 4% 0 3%",
+                                                     "margin": "0 0 0 3%",
                                                      'border-radius': "10px",
                                                      'overflow': 'hidden'}),
 
         html.Div(children=[
-            html.Strong("Total da População:"),
-            html.Div(id='total_populacao', children=[])
-        ], style={'width': "30%",
-                  "height": "5%",
-                  "background-color": "black",
-                  "text-align": "center",
-                  "color": "white",
-                  "margin": "0 3% 0 0",
-                  "padding": "5vh 2vh 5vh 2vh",
-                  'border-radius': "10px"})
+            html.Div(children=[
+                html.Strong("Total da População:"),
+                html.Div(id='total_populacao', children=[])
+            ], style={'width': "100%",
+                      "height": "5vh",
+                      "background-color": "black",
+                      "text-align": "center",
+                      "color": "white",
+                      "padding": "5vh 0 5vh 0",
+                      'border-radius': "10px"}),
+
+            dcc.Graph(id='graph', figure={}, style={'width': "100%",
+                                                    "height": "50vh",
+                                                    "margin": "5vh 0 0 0",
+                                                    'border-radius': "10px",
+                                                    "text-align": "center",
+                                                    'overflow': 'hidden'})
+        ], style={'width': "40%",
+                  "height": "30%",
+                  "margin": "0 4% 0 3%"})
 
     ], style={"display": "flex",
               "justify-content": "space-between"})
@@ -72,8 +82,9 @@ app.layout = html.Div([
 @app.callback(
     [Output(component_id='output_container', component_property='children'),
      Output(component_id='my_bee_map', component_property='figure'),
-     Output(component_id="total_populacao", component_property='children')],
-    [Input(component_id='slct_state_dropdown', component_property='value')]
+     Output(component_id="total_populacao", component_property='children'),
+     Output(component_id="graph", component_property='figure')],
+     [Input(component_id='slct_state_dropdown', component_property='value')]
 )
 
 #---------------------------------------------------------------------------------------------
@@ -96,18 +107,20 @@ def update_graph(option_slctd):
         color='pct_population_series_complete',
         hover_data=['state_abbreviation', 'pct_population_series_complete'],
         color_continuous_scale=px.colors.sequential.BuGn,
-        labels={'pct_population_series_complete': '% da população que completou a série completa de vacinas.'},
+        labels={'pct_population_series_complete':'% que completou a série completa de vacinas', 'state_abbreviation':'estado'},
         template='plotly_dark',
         range_color=[0, 100],
     )
     fig.update_layout(margin={"r": 0, "t": 0, "l": 0, "b": 0})
 
-    pop = update_populacao(option_slctd)
+    pop = update_population(option_slctd)
 
-    return container, fig, pop
+    graph = update_graph(option_slctd)
+
+    return container, fig, pop, graph
 
 #Função para exibir o total da populçao conforme o Dropdown
-def update_populacao(option_slctd):
+def update_population(option_slctd):
     # Filtra o dataframe baseado na seleção do estado
     if option_slctd == "Todos":
         pop = df["population"].sum()
@@ -117,6 +130,19 @@ def update_populacao(option_slctd):
 
     return pop.astype(int)
 
+#Função para exibir o gráfico de barras conforme o Dropdown
+def update_graph(option_slctd):
+    # Filtra o dataframe baseado na seleção do estado
+    if option_slctd == "Todos":
+        dff = df
+    else:
+        dff = df[df["state_name"] == option_slctd]
+
+    graph = px.bar(dff, title="Pessoas que receberam pelo menos uma dose da vacina", template='plotly_dark',
+                   x=dff["state_abbreviation"], y=dff["people_received_at_least_one_dose"],
+                   labels={'people_received_at_least_one_dose':'quantidade', 'state_abbreviation':'estado'})
+
+    return graph
 
 #---------------------------------------------------------------------------------------------
 
